@@ -1,22 +1,27 @@
-pipeline {
-	agent any
-	stages {
-		stage('Checkout SCM') {
-			steps {
-				git 'https://github.com/Sadiq1106/JenkinsDependencyCheckTest'
-			}
-		}
- 
-		stage('OWASP DependencyCheck') {
-			steps {
-				dependencyCheck additionalArguments: '--format HTML --format XML --suppression suppression.xml', odcInstallation: 'Default'
-			}
-		}
-	}	
-	post {
-		success {
-			dependencyCheckPublisher pattern: 'dependency-check-report.xml'
-		}
-	}
+pipeline { 
+    agent any 
+    stages { 
+        stage ('Checkout') { 
+            steps { 
+                git branch:'master', url: 'https://github.com/Sadiq1106/JenkinsDependencyCheckTest' 
+            } 
+        } 
+         
+        stage('Code Quality Check via SonarQube') { 
+           steps { 
+               script { 
+                def scannerHome = tool 'SonarQube'; 
+                   withSonarQubeEnv('SonarQube') { 
+                   sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=OWSAP -
+Dsonar.sources=." 
+                   } 
+               } 
+           } 
+        } 
+    } 
+    post { 
+        always { 
+            recordIssues enabledForFailure: true, tool: sonarQube() 
+        } 
+    } 
 }
-
